@@ -1063,6 +1063,47 @@ st.markdown("""
     [data-testid="stWidgetLabel"] {
         color: #18204a !important;
     }
+
+    /* Extra soft field borders */
+    div[data-baseweb="input"],
+    div[data-baseweb="input"] *,
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] *,
+    div[data-baseweb="textarea"],
+    div[data-baseweb="textarea"] *,
+    [data-testid="stTextInput"] div,
+    [data-testid="stSelectbox"] div,
+    [data-testid="stTextArea"] div {
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="textarea"] > div,
+    [data-testid="stTextInput"] input,
+    [data-testid="stTextArea"] textarea {
+        background: #ffffff !important;
+        border: 1px solid #d7dfec !important;
+        border-radius: 8px !important;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.65) !important;
+    }
+
+    div[data-baseweb="input"] > div:focus-within,
+    div[data-baseweb="select"] > div:focus-within,
+    div[data-baseweb="textarea"] > div:focus-within,
+    [data-testid="stTextInput"] input:focus,
+    [data-testid="stTextArea"] textarea:focus {
+        border: 1px solid #c5b7ef !important;
+        box-shadow: 0 0 0 2px rgba(143,102,232,0.10) !important;
+        outline: none !important;
+    }
+
+    [data-testid="stTextInput"] input,
+    [data-testid="stTextArea"] textarea,
+    div[data-baseweb="select"] span {
+        color: #10183a !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
