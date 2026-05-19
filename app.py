@@ -1391,44 +1391,18 @@ if st.session_state.kategorie == "Energie":
 
 elif st.session_state.kategorie == "Faktury":
     with col_side:
-        st.markdown('<p style="color:#00c864;font-size:0.75rem;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">Konfigurace</p>', unsafe_allow_html=True)
-        st.file_uploader("Vložte dokumenty", accept_multiple_files=True, type=['pdf', 'docx', 'xlsx', 'xls'])
-        st.markdown('<p style="color:rgba(255,255,255,0.3);font-size:0.75rem;margin-top:10px;">🔒 Dostupné po aktivaci API</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#00c864;font-size:0.75rem;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">Připravujeme</p>', unsafe_allow_html=True)
+        st.info("Modul Faktury je připravený jako další krok.")
     with col_main:
-        st.subheader("📄 Faktury — ukázka výstupu")
-        cols_f = st.columns(2)
-        with cols_f[0]:
-            st.markdown('<div class="energy-card fsx-border"><h4 style="color:#0084ff;">🏢 Dodavatel</h4>', unsafe_allow_html=True)
-            for pole, val in [("Dodavatel", "ABC s.r.o."), ("IČ", "12345678"), ("DIČ", "CZ12345678"), ("Číslo faktury", "FAC-2026-001")]:
-                st.markdown(f'<div class="preview-row"><span class="preview-label">{pole}</span><span class="preview-value">{val}</span></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        with cols_f[1]:
-            st.markdown('<div class="energy-card el-border"><h4 style="color:#FFD700;">💰 Platební údaje</h4>', unsafe_allow_html=True)
-            for pole, val in [("Datum splatnosti", "15.02.2026"), ("Celkem bez DPH", "10 000 Kč"), ("DPH 21%", "2 100 Kč"), ("Celkem s DPH", "12 100 Kč"), ("Číslo účtu", "123456789/0800"), ("Variabilní symbol", "20260001")]:
-                st.markdown(f'<div class="preview-row"><span class="preview-label">{pole}</span><span class="preview-value">{val}</span></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        st.info("⏳ Funkce bude aktivní po připojení Anthropic API.")
-
+        st.subheader("📄 Faktury")
+        st.info("Na této části se pracuje. Později tady bude evidence faktur, extrakce dat a exporty.")
 elif st.session_state.kategorie == "Smlouvy":
     with col_side:
-        st.markdown('<p style="color:#00c864;font-size:0.75rem;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">Konfigurace</p>', unsafe_allow_html=True)
-        st.file_uploader("Vložte dokumenty", accept_multiple_files=True, type=['pdf', 'docx', 'xlsx', 'xls'])
-        st.markdown('<p style="color:rgba(255,255,255,0.3);font-size:0.75rem;margin-top:10px;">🔒 Dostupné po aktivaci API</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#00c864;font-size:0.75rem;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">Připravujeme</p>', unsafe_allow_html=True)
+        st.info("Modul Smlouvy je připravený jako další krok.")
     with col_main:
-        st.subheader("📋 Smlouvy — ukázka výstupu")
-        cols_s = st.columns(2)
-        with cols_s[0]:
-            st.markdown('<div class="energy-card gas-border"><h4 style="color:#FF5722;">📝 Smluvní strany</h4>', unsafe_allow_html=True)
-            for pole, val in [("Objednatel", "XYZ a.s."), ("Zhotovitel", "ABC s.r.o."), ("Datum podpisu", "01.01.2026"), ("Platnost do", "31.12.2026")]:
-                st.markdown(f'<div class="preview-row"><span class="preview-label">{pole}</span><span class="preview-value">{val}</span></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        with cols_s[1]:
-            st.markdown('<div class="energy-card water-border"><h4 style="color:#00BFFF;">📌 Klíčové podmínky</h4>', unsafe_allow_html=True)
-            for pole, val in [("Předmět", "Dodávka služeb"), ("Hodnota", "120 000 Kč/rok"), ("Výpovědní lhůta", "3 měsíce"), ("Obnova", "Automatická")]:
-                st.markdown(f'<div class="preview-row"><span class="preview-label">{pole}</span><span class="preview-value">{val}</span></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        st.info("⏳ Funkce bude aktivní po připojení Anthropic API.")
-
+        st.subheader("📋 Smlouvy")
+        st.info("Na této části se pracuje. Později tady bude přehled smluv, termínů, podmínek a upozornění.")
 elif st.session_state.kategorie == "OOPP & MČDP":
     with col_side:
         st.markdown('<p style="color:#00c864;font-size:0.75rem;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">Konfigurace</p>', unsafe_allow_html=True)
