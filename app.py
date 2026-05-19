@@ -1292,6 +1292,12 @@ st.markdown("""
     .doc-table tr:nth-child(even) td {
         background: #f9fbfe;
     }
+
+    /* Energy result rows readability */
+    .energy-card + div span,
+    .energy-card span {
+        color: #10183a !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1522,9 +1528,9 @@ if st.session_state.kategorie == "Energie":
                                     hodnota_fmt = str(hodnota)
                                 st.markdown(
                                     f'<div style="display:flex;justify-content:space-between;'
-                                    f'border-bottom:1px solid rgba(255,255,255,0.1);padding:4px 0;">'
-                                    f'<span style="color:#888;font-size:0.75rem;text-transform:uppercase;">{parametr}</span>'
-                                    f'<span style="color:#fff;font-weight:bold;font-size:0.85rem;">{hodnota_fmt}</span>'
+                                    f'border-bottom:1px solid #d7dfec;padding:6px 0;">'
+                                    f'<span style="color:#66708a;font-size:0.75rem;text-transform:uppercase;">{parametr}</span>'
+                                    f'<span style="color:#10183a;font-weight:700;font-size:0.86rem;">{hodnota_fmt}</span>'
                                     f'</div>', unsafe_allow_html=True)
                             st.markdown('</div>', unsafe_allow_html=True)
             st.write("")
