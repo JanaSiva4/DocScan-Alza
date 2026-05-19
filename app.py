@@ -1224,6 +1224,31 @@ st.markdown("""
         box-shadow: 0 0 0 2px rgba(143, 102, 232, 0.08) !important;
         outline: 0 !important;
     }
+
+    /* Light dataframe tables */
+    [data-testid="stDataFrame"],
+    [data-testid="stDataFrame"] div,
+    [data-testid="stDataFrame"] canvas,
+    [data-testid="stDataFrame"] [role="grid"],
+    [data-testid="stDataFrame"] [role="row"],
+    [data-testid="stDataFrame"] [role="gridcell"],
+    [data-testid="stDataFrame"] [role="columnheader"] {
+        background-color: #ffffff !important;
+        color: #10183a !important;
+    }
+
+    [data-testid="stDataFrame"] {
+        border: 1px solid #d7dfec !important;
+        border-radius: 8px !important;
+        box-shadow: 0 10px 24px rgba(36,47,86,0.06) !important;
+        overflow: hidden !important;
+    }
+
+    [data-testid="stDataFrame"] [role="columnheader"] {
+        background-color: #f4f7fb !important;
+        color: #34405f !important;
+        font-weight: 700 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
