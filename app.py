@@ -223,6 +223,18 @@ def _prehled_hodnota(rows: list[dict], label: str):
             if str(key).strip().lower() == wanted:
                 return value
     return None
+
+def zobraz_tabulku(rows, empty_text="Žádná data k zobrazení."):
+    """Zobrazí čitelnou světlou tabulku místo st.dataframe canvasu."""
+    if not rows:
+        st.info(empty_text)
+        return
+    df = pd.DataFrame(rows)
+    if df.empty:
+        st.info(empty_text)
+        return
+    html = df.to_html(index=False, escape=False, classes="doc-table")
+    st.markdown(html, unsafe_allow_html=True)
 def _norm_ano(val) -> bool:
     return str(val).strip().upper() in ["ANO", "TRUE", "1", "YES"]
 
@@ -1249,6 +1261,37 @@ st.markdown("""
         color: #34405f !important;
         font-weight: 700 !important;
     }
+
+    /* Readable dashboard HTML tables */
+    .doc-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #ffffff;
+        color: #10183a;
+        border: 1px solid #d7dfec;
+        border-radius: 8px;
+        overflow: hidden;
+        font-size: 0.86rem;
+    }
+    .doc-table th {
+        background: #f3f6fb;
+        color: #34405f;
+        font-weight: 700;
+        text-align: left;
+        padding: 9px 10px;
+        border-bottom: 1px solid #d7dfec;
+        white-space: nowrap;
+    }
+    .doc-table td {
+        color: #10183a;
+        padding: 8px 10px;
+        border-bottom: 1px solid #e7edf5;
+        vertical-align: top;
+        white-space: nowrap;
+    }
+    .doc-table tr:nth-child(even) td {
+        background: #f9fbfe;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1578,28 +1621,28 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             with t_exp:
                 exp_rows = oopp_expirovano + oopp_brzy
                 if exp_rows:
-                    st.dataframe(pd.DataFrame(exp_rows), use_container_width=True)
+                    zobraz_tabulku(exp_rows)
                 else:
                     st.success("Žádné expirace k řešení.")
             with t_podpis:
                 if oopp_bez_podpisu:
-                    st.dataframe(pd.DataFrame(oopp_bez_podpisu), use_container_width=True)
+                    zobraz_tabulku(oopp_bez_podpisu)
                 else:
                     st.success("Všechny OOPP položky mají podpis.")
             with t_mcdp:
                 if mcdp_nekompletni:
-                    st.dataframe(pd.DataFrame(mcdp_nekompletni), use_container_width=True)
+                    zobraz_tabulku(mcdp_nekompletni)
                 else:
                     st.success("Všechny MČDP záznamy jsou kompletní.")
             with t_data:
                 st.write("**OOPP_CZLC4**")
-                st.dataframe(pd.DataFrame(oopp_rows), use_container_width=True)
+                zobraz_tabulku(oopp_rows)
                 st.write("**MCDP_CZLC4**")
-                st.dataframe(pd.DataFrame(mcdp_rows), use_container_width=True)
+                zobraz_tabulku(mcdp_rows)
                 st.write("**Podpisy**")
-                st.dataframe(pd.DataFrame(podpisy_rows), use_container_width=True)
+                zobraz_tabulku(podpisy_rows)
                 st.write("**Přehled**")
-                st.dataframe(pd.DataFrame(prehled_rows), use_container_width=True)
+                zobraz_tabulku(prehled_rows)
 
         elif rezim == "Výdej MČDP":
             st.subheader("🧴 Výdej MČDP — kvartální")
