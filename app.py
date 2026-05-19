@@ -1007,6 +1007,32 @@ st.markdown("""
         border: 1px solid #d9c7ff !important;
         border-radius: 10px !important;
     }
+
+    /* Upload readability fix */
+    [data-testid="stFileUploader"] section,
+    [data-testid="stFileUploader"] section > div,
+    [data-testid="stFileUploadDropzone"],
+    [data-testid="stFileUploadDropzone"] > div,
+    section[data-testid="stFileUploadDropzone"],
+    section[data-testid="stFileUploadDropzone"] > div {
+        background: #ffffff !important;
+        border: 1px solid #b9c7dc !important;
+        color: var(--doc-ink) !important;
+    }
+
+    [data-testid="stFileUploader"] button,
+    [data-testid="stFileUploader"] small,
+    [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] p,
+    [data-testid="stFileUploader"] div {
+        color: var(--doc-ink) !important;
+    }
+
+    [data-testid="stFileUploader"] button {
+        background: #f6f0ff !important;
+        border: 1px solid #d5c0ff !important;
+        border-radius: 8px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
