@@ -830,6 +830,7 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
         ('Rukavice bezpečnostní', 'rukavice', 'dle potřeby pozice'),
         ('Kabát proti chladu', 'kabat', 'zimní období'),
         ('Tričko', 'tricko', 'letní období'),
+        ('Vesta', 'vesta', 'dle standartu firmy'),
         ('Mikina', 'mikina', 'přechodné období'),
         ('Čepice / kšiltovka', 'cepice', 'dle potřeby'),
         ('Ochranné brýle', 'bryle', 'dle pracoviště'),
