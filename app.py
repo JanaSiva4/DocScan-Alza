@@ -1104,6 +1104,45 @@ st.markdown("""
     div[data-baseweb="select"] span {
         color: #10183a !important;
     }
+
+    /* Ultra soft inputs - remove dark Streamlit/BaseWeb borders */
+    [data-testid="stTextInput"] input,
+    [data-testid="stTextArea"] textarea,
+    [data-testid="stNumberInput"] input,
+    div[data-baseweb="input"] input,
+    div[data-baseweb="textarea"] textarea {
+        background: #ffffff !important;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+    }
+
+    [data-testid="stTextInput"] div[data-baseweb="input"],
+    [data-testid="stTextInput"] div[data-baseweb="input"] > div,
+    [data-testid="stTextArea"] div[data-baseweb="textarea"],
+    [data-testid="stTextArea"] div[data-baseweb="textarea"] > div,
+    [data-testid="stNumberInput"] div[data-baseweb="input"],
+    [data-testid="stNumberInput"] div[data-baseweb="input"] > div,
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] > div {
+        background: #ffffff !important;
+        border: 1px solid #e3e9f2 !important;
+        outline: 0 !important;
+        box-shadow: 0 1px 2px rgba(16, 24, 58, 0.035) !important;
+    }
+
+    [data-testid="stTextInput"] div[data-baseweb="input"]:focus-within,
+    [data-testid="stTextInput"] div[data-baseweb="input"] > div:focus-within,
+    [data-testid="stTextArea"] div[data-baseweb="textarea"]:focus-within,
+    [data-testid="stTextArea"] div[data-baseweb="textarea"] > div:focus-within,
+    [data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within,
+    [data-testid="stNumberInput"] div[data-baseweb="input"] > div:focus-within,
+    div[data-baseweb="select"]:focus-within,
+    div[data-baseweb="select"] > div:focus-within {
+        border-color: #d6c9f8 !important;
+        box-shadow: 0 0 0 2px rgba(143, 102, 232, 0.08) !important;
+        outline: 0 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
