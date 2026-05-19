@@ -170,7 +170,17 @@ def nacist_sheet_radky(sheet_name: str) -> list[dict]:
         if r.status_code != 200:
             return []
         data = r.json()
-        values = data.get("values", [])
+
+        if isinstance(data, list):
+            return data if all(isinstance(x, dict) for x in data) else []
+
+        for key in ["rows", "data", "records"]:
+            rows_obj = data.get(key, []) if isinstance(data, dict) else []
+            if rows_obj and isinstance(rows_obj, list):
+                if all(isinstance(x, dict) for x in rows_obj):
+                    return rows_obj
+
+        values = data.get("values", []) if isinstance(data, dict) else []
         if len(values) < 2:
             return []
         headers = [str(h).strip() for h in values[0]]
@@ -185,6 +195,34 @@ def nacist_sheet_radky(sheet_name: str) -> list[dict]:
         return []
 
 
+
+def nacist_prvni_dostupny_sheet(sheet_names: list[str]) -> tuple[list[dict], str]:
+    """Zkusí více názvů listů a vrátí první, který má data."""
+    for sheet_name in sheet_names:
+        rows = nacist_sheet_radky(sheet_name)
+        if rows:
+            return rows, sheet_name
+    return [], sheet_names[0] if sheet_names else ""
+
+def _row_get(row: dict, names: list[str], default=""):
+    norm = {str(k).strip().lower(): v for k, v in row.items()}
+    for name in names:
+        key = str(name).strip().lower()
+        if key in norm:
+            return norm[key]
+    return default
+
+
+def _prehled_hodnota(rows: list[dict], label: str):
+    wanted = label.strip().lower()
+    for row in rows:
+        vals = list(row.values())
+        if len(vals) >= 2 and str(vals[0]).strip().lower() == wanted:
+            return vals[1]
+        for key, value in row.items():
+            if str(key).strip().lower() == wanted:
+                return value
+    return None
 def _norm_ano(val) -> bool:
     return str(val).strip().upper() in ["ANO", "TRUE", "1", "YES"]
 
@@ -1220,26 +1258,27 @@ for col, (icon, name, desc) in zip(cols_kat, kategorie_list):
 
 st.write("---")
 
-pocet_souboru = st.session_state.get('pocet_souboru', 0)
-obdobi_stat = st.session_state.vysledky[0].get('obdobi', '—') if st.session_state.vysledky else '—'
-celkem_nakladu = 0
-if st.session_state.vysledky:
-    res = st.session_state.vysledky[0]
-    for klic in ['el_cena_celkem_zaklad_kc', 'fsx_cena_bez_dph', 'plyn_cena_celkem_zaklad_kc', 'voda_cena_bez_dph']:
-        try:
-            hodnota = res.get(klic, 0)
-            if hodnota and str(hodnota).lower() != 'n/a':
-                celkem_nakladu += float(str(hodnota).replace(',', '.').replace(' ', ''))
-        except Exception:
-            pass
+if st.session_state.kategorie == "Energie":
+    pocet_souboru = st.session_state.get('pocet_souboru', 0)
+    obdobi_stat = st.session_state.vysledky[0].get('obdobi', '—') if st.session_state.vysledky else '—'
+    celkem_nakladu = 0
+    if st.session_state.vysledky:
+        res = st.session_state.vysledky[0]
+        for klic in ['el_cena_celkem_zaklad_kc', 'fsx_cena_bez_dph', 'plyn_cena_celkem_zaklad_kc', 'voda_cena_bez_dph']:
+            try:
+                hodnota = res.get(klic, 0)
+                if hodnota and str(hodnota).lower() != 'n/a':
+                    celkem_nakladu += float(str(hodnota).replace(',', '.').replace(' ', ''))
+            except Exception:
+                pass
 
-c1, c2, c3, c4 = st.columns(4)
-with c1: st.metric("Nahráno souborů", str(pocet_souboru) if pocet_souboru > 0 else "—")
-with c2: st.metric("Období", obdobi_stat)
-with c3: st.metric("Ušetřeno času", "~10 min" if st.session_state.vysledky else "—")
-with c4: st.metric("Celkem nákladů", f"{celkem_nakladu:,.0f} Kč".replace(",", " ") if celkem_nakladu > 0 else "—")
+    c1, c2, c3, c4 = st.columns(4)
+    with c1: st.metric("Nahráno souborů", str(pocet_souboru) if pocet_souboru > 0 else "—")
+    with c2: st.metric("Období", obdobi_stat)
+    with c3: st.metric("Ušetřeno času", "~10 min" if st.session_state.vysledky else "—")
+    with c4: st.metric("Celkem nákladů", f"{celkem_nakladu:,.0f} Kč".replace(",", " ") if celkem_nakladu > 0 else "—")
 
-st.write("---")
+    st.write("---")
 col_side, col_main = st.columns([1, 3])
 
 if st.session_state.kategorie == "Energie":
@@ -1457,33 +1496,64 @@ elif st.session_state.kategorie == "OOPP & MČDP":
 
         if rezim == "Dashboard":
             st.subheader("📊 OOPP & MČDP — dashboard")
-            mcdp_rows = nacist_sheet_radky(f"MCDP_{sklad_oopp}")
-            oopp_rows = nacist_sheet_radky(f"OOPP_{sklad_oopp}")
+            mcdp_rows, mcdp_sheet = nacist_prvni_dostupny_sheet([f"MCDP_{sklad_oopp}", f"MCDP-{sklad_oopp}", "MCDP"])
+            oopp_rows, oopp_sheet = nacist_prvni_dostupny_sheet([f"OOPP_{sklad_oopp}", f"OOPP-{sklad_oopp}", "OOPP"])
             podpisy_rows = nacist_sheet_radky("Podpisy")
+            prehled_rows, prehled_sheet = nacist_prvni_dostupny_sheet(["Přehled", "Prehled", f"Přehled_{sklad_oopp}", f"Prehled_{sklad_oopp}"])
 
-            mcdp_nekompletni = [r for r in mcdp_rows if not _norm_ano(r.get("Vše vydáno") or r.get("Vse vydano") or r.get("Všechno vydáno") or r.get("Vse vydáno"))]
-            oopp_bez_podpisu = [r for r in oopp_rows if not _norm_ano(r.get("Podpis"))]
-            oopp_expirovano = []
+            mcdp_nekompletni = [r for r in mcdp_rows if not _norm_ano(_row_get(r, ["Vše vydáno", "Vse vydano", "Všechno vydáno"]))]
+            oopp_bez_podpisu = [r for r in oopp_rows if not _norm_ano(_row_get(r, ["Podpis"]))]
+            oopp_v_poradku = []
             oopp_brzy = []
+            oopp_expirovano = []
             for r in oopp_rows:
-                stav = str(r.get("Stav", "")).strip().lower()
-                dny = _days_to_exp(r.get("Expirace", ""))
+                stav = str(_row_get(r, ["Stav"], "")).strip().lower()
+                dny = _days_to_exp(_row_get(r, ["Expirace"], ""))
                 if "expiro" in stav or (dny is not None and dny < 0):
                     oopp_expirovano.append(r)
                 elif "brzy" in stav or (dny is not None and 0 <= dny <= 60):
                     oopp_brzy.append(r)
+                elif "poradku" in stav or "pořádku" in stav:
+                    oopp_v_poradku.append(r)
+
+            prehled_celkem = _prehled_hodnota(prehled_rows, "Celkem záznamy")
+            prehled_vydano_ano = _prehled_hodnota(prehled_rows, "Vse vydano: ANO") or _prehled_hodnota(prehled_rows, "Vše vydáno: ANO")
+            prehled_vydano_ne = _prehled_hodnota(prehled_rows, "Vse vydano: NE") or _prehled_hodnota(prehled_rows, "Vše vydáno: NE")
+            prehled_oopp_ok = _prehled_hodnota(prehled_rows, "V pořádku")
+            prehled_oopp_brzy = _prehled_hodnota(prehled_rows, "Brzy expiruje")
+            prehled_oopp_exp = _prehled_hodnota(prehled_rows, "Expirováno")
+
+            celkem_mcdp = int(prehled_celkem) if str(prehled_celkem).isdigit() else len(mcdp_rows)
+            vydano_ano = int(prehled_vydano_ano) if str(prehled_vydano_ano).isdigit() else max(0, len(mcdp_rows) - len(mcdp_nekompletni))
+            vydano_ne = int(prehled_vydano_ne) if str(prehled_vydano_ne).isdigit() else len(mcdp_nekompletni)
+            oopp_ok = int(prehled_oopp_ok) if str(prehled_oopp_ok).isdigit() else len(oopp_v_poradku)
+            oopp_brzy_pocet = int(prehled_oopp_brzy) if str(prehled_oopp_brzy).isdigit() else len(oopp_brzy)
+            oopp_exp_pocet = int(prehled_oopp_exp) if str(prehled_oopp_exp).isdigit() else len(oopp_expirovano)
+
+            mcdp_sheet_label = mcdp_sheet or "—"
+            oopp_sheet_label = oopp_sheet or "—"
+            prehled_sheet_label = prehled_sheet or "—"
+            st.caption(f"Načteno: MČDP {len(mcdp_rows)} řádků z {mcdp_sheet_label}, OOPP {len(oopp_rows)} řádků z {oopp_sheet_label}, Přehled {len(prehled_rows)} řádků z {prehled_sheet_label}.")
+            if not oopp_rows and not prehled_rows:
+                st.warning("OOPP záznamy se nenačetly. Zkontroluj, jestli Apps Script vrací list OOPP_CZLC4 nebo Přehled.")
 
             k1, k2, k3, k4 = st.columns(4)
-            k1.metric("MČDP záznamy", len(mcdp_rows))
-            k2.metric("MČDP nekompletní", len(mcdp_nekompletni))
-            k3.metric("OOPP bez podpisu", len(oopp_bez_podpisu))
-            k4.metric("Expirace k řešení", len(oopp_expirovano) + len(oopp_brzy))
+            k1.metric("MČDP záznamy", celkem_mcdp)
+            k2.metric("Vše vydáno: ANO", vydano_ano)
+            k3.metric("Vše vydáno: NE", vydano_ne)
+            k4.metric("OOPP k řešení", oopp_brzy_pocet + oopp_exp_pocet + len(oopp_bez_podpisu))
+
+            st.write("**OOPP — stav pomůcek**")
+            s1, s2, s3 = st.columns(3)
+            s1.metric("V pořádku", oopp_ok)
+            s2.metric("Brzy expiruje", oopp_brzy_pocet)
+            s3.metric("Expirováno", oopp_exp_pocet)
 
             t_exp, t_podpis, t_mcdp, t_data = st.tabs(["Expirace", "Bez podpisu", "MČDP nekompletní", "Všechna data"])
             with t_exp:
-                if oopp_expirovano or oopp_brzy:
-                    df_exp = pd.DataFrame(oopp_expirovano + oopp_brzy)
-                    st.dataframe(df_exp, use_container_width=True)
+                exp_rows = oopp_expirovano + oopp_brzy
+                if exp_rows:
+                    st.dataframe(pd.DataFrame(exp_rows), use_container_width=True)
                 else:
                     st.success("Žádné expirace k řešení.")
             with t_podpis:
@@ -1497,12 +1567,14 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 else:
                     st.success("Všechny MČDP záznamy jsou kompletní.")
             with t_data:
-                st.write("**OOPP**")
+                st.write("**OOPP_CZLC4**")
                 st.dataframe(pd.DataFrame(oopp_rows), use_container_width=True)
-                st.write("**MČDP**")
+                st.write("**MCDP_CZLC4**")
                 st.dataframe(pd.DataFrame(mcdp_rows), use_container_width=True)
                 st.write("**Podpisy**")
                 st.dataframe(pd.DataFrame(podpisy_rows), use_container_width=True)
+                st.write("**Přehled**")
+                st.dataframe(pd.DataFrame(prehled_rows), use_container_width=True)
 
         elif rezim == "Výdej MČDP":
             st.subheader("🧴 Výdej MČDP — kvartální")
