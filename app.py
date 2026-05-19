@@ -1158,8 +1158,8 @@ if 'file_uploader_key' not in st.session_state: st.session_state.file_uploader_k
 
 kategorie_list = [
     ("⚡", "Energie", "Spotřeba & náklady"),
-    ("📄", "Faktury", "Dodavatel, částky, splatnost"),
-    ("📋", "Smlouvy", "Strany, podmínky, datum"),
+    ("📄", "Faktury", "Připravujeme"),
+    ("📋", "Smlouvy", "Připravujeme"),
     ("🦺", "OOPP & MČDP", "Evidence & výdej pomůcek"),
 ]
 
