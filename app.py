@@ -830,7 +830,7 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
         ('Rukavice bezpečnostní', 'rukavice', 'dle potřeby pozice'),
         ('Kabát proti chladu', 'kabat', 'zimní období'),
         ('Tričko', 'tricko', 'letní období'),
-        ('Vesta', 'vesta', 'dle standartu firmy'),
+        ('Reflexní vesta', 'vesta', 'dle standardu firmy'),
         ('Mikina', 'mikina', 'přechodné období'),
         ('Čepice / kšiltovka', 'cepice', 'dle potřeby'),
         ('Ochranné brýle', 'bryle', 'dle pracoviště'),
@@ -1032,6 +1032,36 @@ st.markdown("""
         background: #f6f0ff !important;
         border: 1px solid #d5c0ff !important;
         border-radius: 8px !important;
+    }
+
+    /* Softer form fields */
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="textarea"] > div,
+    textarea {
+        background: #ffffff !important;
+        border: 1px solid #c8d3e5 !important;
+        box-shadow: 0 1px 2px rgba(20, 30, 60, 0.04) !important;
+        outline: none !important;
+    }
+
+    div[data-baseweb="input"] > div:focus-within,
+    div[data-baseweb="select"] > div:focus-within,
+    div[data-baseweb="textarea"] > div:focus-within,
+    textarea:focus {
+        border-color: #a88bea !important;
+        box-shadow: 0 0 0 3px rgba(143, 102, 232, 0.14) !important;
+    }
+
+    input,
+    textarea,
+    div[data-baseweb="select"] span {
+        color: #10183a !important;
+    }
+
+    label,
+    [data-testid="stWidgetLabel"] {
+        color: #18204a !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1429,6 +1459,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 ("Rukavice bezpečnostní", "rukavice", None),
                 ("Kabát proti chladu", "kabat", 24),
                 ("Tričko", "tricko", 12),
+                ("Reflexní vesta", "vesta", None),
                 ("Mikina", "mikina", 6),
                 ("Čepice / kšiltovka", "cepice", 24),
                 ("Ochranné brýle", "bryle", None),
@@ -1590,6 +1621,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 ("Rukavice bezpečnostní", "rukavice", None),
                 ("Kabát proti chladu", "kabat", 24),
                 ("Tričko", "tricko", 12),
+                ("Reflexní vesta", "vesta", None),
                 ("Mikina", "mikina", 6),
                 ("Čepice / kšiltovka", "cepice", 24),
                 ("Ochranné brýle", "bryle", None),
