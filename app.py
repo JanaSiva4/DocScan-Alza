@@ -162,6 +162,49 @@ def zkontroluj_podpis_oopp(zamestnanec: str, email: str, sklad: str = "CZLC4") -
         return False
 
 
+
+def nacist_sheet_radky(sheet_name: str) -> list[dict]:
+    """Načte list z Google Sheets přes Apps Script a vrátí řádky jako dict podle hlavičky."""
+    try:
+        r = requests.get(f"{FACILITY_SCRIPT_URL}?sheet={sheet_name}", timeout=10)
+        if r.status_code != 200:
+            return []
+        data = r.json()
+        values = data.get("values", [])
+        if len(values) < 2:
+            return []
+        headers = [str(h).strip() for h in values[0]]
+        rows = []
+        for raw in values[1:]:
+            row = {}
+            for i, header in enumerate(headers):
+                row[header] = raw[i] if i < len(raw) else ""
+            rows.append(row)
+        return rows
+    except Exception:
+        return []
+
+
+def _norm_ano(val) -> bool:
+    return str(val).strip().upper() in ["ANO", "TRUE", "1", "YES"]
+
+
+def _days_to_exp(exp_str):
+    if not exp_str:
+        return None
+    try:
+        s = str(exp_str).strip()
+        if "/" in s:
+            mes, rok = s.split("/")[:2]
+            exp = datetime(int(rok), int(mes), 1)
+        elif "." in s:
+            parts = s.split(".")
+            exp = datetime(int(parts[-1]), int(parts[-2]), 1)
+        else:
+            return None
+        return (exp - datetime.now()).days
+    except Exception:
+        return None
 def odeslat_oopp_batch_do_sheets(rows_data: list, sklad: str = "CZLC4") -> bool:
     """Pošle více OOPP záznamů — každý jako samostatný append (jako MČDP).
     Sloupec Podpis se nastaví podle skutečného 2FA podpisu v Podpisy."""
@@ -1407,12 +1450,61 @@ elif st.session_state.kategorie == "OOPP & MČDP":
     with col_side:
         st.markdown('<p style="color:#00c864;font-size:0.75rem;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">Konfigurace</p>', unsafe_allow_html=True)
         sklad_oopp = st.selectbox("Sklad:", ["CZLC4", "LCÚ", "LCZ", "SKLC3"], key="sklad_oopp")
-        rezim = st.radio("Režim:", ["Výdej MČDP", "Evidence OOPP", "Tisk protokolu MČDP", "Tisk protokolu OOPP"])
+        rezim = st.radio("Režim:", ["Dashboard", "Výdej MČDP", "Evidence OOPP", "Tisk protokolu MČDP", "Tisk protokolu OOPP"])
 
     with col_main:
         PODPIS_URL = "https://janasiva4.github.io/DocScan-Alza/podpis_2fa.html"
 
-        if rezim == "Výdej MČDP":
+        if rezim == "Dashboard":
+            st.subheader("📊 OOPP & MČDP — dashboard")
+            mcdp_rows = nacist_sheet_radky(f"MCDP_{sklad_oopp}")
+            oopp_rows = nacist_sheet_radky(f"OOPP_{sklad_oopp}")
+            podpisy_rows = nacist_sheet_radky("Podpisy")
+
+            mcdp_nekompletni = [r for r in mcdp_rows if not _norm_ano(r.get("Vše vydáno") or r.get("Vse vydano") or r.get("Všechno vydáno") or r.get("Vse vydáno"))]
+            oopp_bez_podpisu = [r for r in oopp_rows if not _norm_ano(r.get("Podpis"))]
+            oopp_expirovano = []
+            oopp_brzy = []
+            for r in oopp_rows:
+                stav = str(r.get("Stav", "")).strip().lower()
+                dny = _days_to_exp(r.get("Expirace", ""))
+                if "expiro" in stav or (dny is not None and dny < 0):
+                    oopp_expirovano.append(r)
+                elif "brzy" in stav or (dny is not None and 0 <= dny <= 60):
+                    oopp_brzy.append(r)
+
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("MČDP záznamy", len(mcdp_rows))
+            k2.metric("MČDP nekompletní", len(mcdp_nekompletni))
+            k3.metric("OOPP bez podpisu", len(oopp_bez_podpisu))
+            k4.metric("Expirace k řešení", len(oopp_expirovano) + len(oopp_brzy))
+
+            t_exp, t_podpis, t_mcdp, t_data = st.tabs(["Expirace", "Bez podpisu", "MČDP nekompletní", "Všechna data"])
+            with t_exp:
+                if oopp_expirovano or oopp_brzy:
+                    df_exp = pd.DataFrame(oopp_expirovano + oopp_brzy)
+                    st.dataframe(df_exp, use_container_width=True)
+                else:
+                    st.success("Žádné expirace k řešení.")
+            with t_podpis:
+                if oopp_bez_podpisu:
+                    st.dataframe(pd.DataFrame(oopp_bez_podpisu), use_container_width=True)
+                else:
+                    st.success("Všechny OOPP položky mají podpis.")
+            with t_mcdp:
+                if mcdp_nekompletni:
+                    st.dataframe(pd.DataFrame(mcdp_nekompletni), use_container_width=True)
+                else:
+                    st.success("Všechny MČDP záznamy jsou kompletní.")
+            with t_data:
+                st.write("**OOPP**")
+                st.dataframe(pd.DataFrame(oopp_rows), use_container_width=True)
+                st.write("**MČDP**")
+                st.dataframe(pd.DataFrame(mcdp_rows), use_container_width=True)
+                st.write("**Podpisy**")
+                st.dataframe(pd.DataFrame(podpisy_rows), use_container_width=True)
+
+        elif rezim == "Výdej MČDP":
             st.subheader("🧴 Výdej MČDP — kvartální")
             if 'mcdp_reset' not in st.session_state:
                 st.session_state.mcdp_reset = 0
