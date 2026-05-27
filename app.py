@@ -878,11 +878,13 @@ def generovat_pdf_protokol(zamestnanec, sklad, kvartal, vydane_polozky, vedouci,
  
  
 def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp,
-                        expirace_oopp, vedouci, stredisko="", osobni_cislo=""):
+                        expirace_oopp, vedouci, stredisko="", osobni_cislo="", mnozstvi_oopp=None):
     if velikosti_oopp is None:
         velikosti_oopp = {}
     if expirace_oopp is None:
         expirace_oopp = {}
+    if mnozstvi_oopp is None:
+        mnozstvi_oopp = {}
     body_s  = ParagraphStyle('b', fontSize=10, fontName=PDF_FONT, textColor=TEXT_DARK, leading=14)
     body_b  = ParagraphStyle('bb', fontSize=10, fontName=PDF_FONT_BOLD, textColor=TEXT_DARK, leading=14)
     section_s = ParagraphStyle('sec', fontSize=11, fontName=PDF_FONT_BOLD, textColor=ALZA_BLUE, leading=14, spaceAfter=4)
@@ -919,33 +921,34 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
     el.append(Spacer(1, 0.2*cm))
     el.append(Paragraph("Vydávané pomůcky", section_s))
     pomucky_def = [
-        ('Oděv pracovní (montérky)', 'odev', 'dle standardu firmy'),
-        ('Rukavice bezpečnostní', 'rukavice', 'dle potřeby pozice'),
-        ('Kabát proti chladu', 'kabat', 'zimní období'),
-        ('Tričko', 'tricko', 'letní období'),
-        ('Reflexní vesta', 'vesta', 'dle standardu firmy'),
-        ('Mikina', 'mikina', 'přechodné období'),
-        ('Čepice / kšiltovka', 'cepice', 'dle potřeby'),
-        ('Ochranné brýle', 'bryle', 'dle pracoviště'),
-        ('Kraťasy', 'kratasy', 'letní období'),
-        ('Thermo prádlo', 'thermo', 'zimní období'),
-        ('Bezpečnostní obuv', 'obuv', 'S1P / S3'),
+        ('Oděv pracovní (montérky)', 'odev'),
+        ('Rukavice bezpečnostní', 'rukavice'),
+        ('Kabát proti chladu', 'kabat'),
+        ('Tričko', 'tricko'),
+        ('Reflexní vesta', 'vesta'),
+        ('Mikina', 'mikina'),
+        ('Čepice / kšiltovka', 'cepice'),
+        ('Ochranné brýle', 'bryle'),
+        ('Kraťasy', 'kratasy'),
+        ('Thermo prádlo', 'thermo'),
+        ('Bezpečnostní obuv', 'obuv'),
     ]
     def mark(val):
         return '✓' if val else '—'
     header_row = [Paragraph('Pomůcka', th_s), Paragraph('Vydáno', th_s),
                   Paragraph('Velikost', th_s), Paragraph('Expirace', th_s),
-                  Paragraph('Specifikace', th_s), Paragraph('Podpis', th_s)]
+                  Paragraph('Množství', th_s), Paragraph('Podpis', th_s)]
     polozky_data = [header_row]
-    for nazev, klic, spec in pomucky_def:
+    for nazev, klic in pomucky_def:
         vydano = vydane_pomucky.get(klic, False)
         vel = velikosti_oopp.get(klic, '') if vydano else ''
         exp = expirace_oopp.get(klic, '') if vydano else ''
+        mnozstvi = str(mnozstvi_oopp.get(klic, '') or '1') if vydano else '—'
         expirace_cell = exp if exp else ('dle potřeby' if vydano else '—')
         polozky_data.append([Paragraph(nazev, td_s), mark(vydano),
                               vel if vel else ('__________' if vydano else '—'),
-                              Paragraph(expirace_cell, td_s), Paragraph(spec, td_s), ''])
-    col_w = [4.1*cm, 1.3*cm, 2.1*cm, 2.45*cm, 3.55*cm, 3.5*cm]
+                              Paragraph(expirace_cell, td_s), mnozstvi, ''])
+    col_w = [4.5*cm, 1.3*cm, 2.25*cm, 2.45*cm, 2.0*cm, 4.5*cm]
     pt = Table(polozky_data, colWidths=col_w, rowHeights=[0.75*cm] + [0.7*cm]*len(pomucky_def))
     pt.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), ALZA_BLUE),
@@ -1763,6 +1766,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             o1, o2 = st.columns(2)
             vydane = {}
             velikosti_vyd = {}
+            mnozstvi_vyd = {}
             for i, (nazev, klic, exp_mes) in enumerate(pomucky_def):
                 col = o1 if i % 2 == 0 else o2
                 if exp_mes and exp_mes >= 12:
@@ -1776,6 +1780,9 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                     velikosti_vyd[klic] = col.text_input(f"Velikost — {nazev}",
                         key=f"vel_{klic}_{st.session_state.oopp_reset}",
                         placeholder="např. L, XL, 42, …")
+                    mnozstvi_vyd[klic] = col.number_input(f"Množství — {nazev}",
+                        min_value=1, step=1, value=1,
+                        key=f"mnoz_{klic}_{st.session_state.oopp_reset}")
 
             def exp_datum(mesice):
                 if not mesice:
@@ -1837,6 +1844,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                                     "user": user2,
                                     "pomucka": nazev,
                                     "velikost": velikosti_vyd.get(klic, ""),
+                                    "mnozstvi": mnozstvi_vyd.get(klic, 1),
                                     "expirace": exp or "",
                                     "podpis": True,
                                     "zadal": vedouci2,
@@ -1858,7 +1866,8 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                         zamestnanec=zamestnanec2, email=email_zam2, sklad=sklad_oopp,
                         vydane_pomucky=vydane, velikosti_oopp=velikosti_vyd,
                         expirace_oopp=expirace_dict, vedouci=vedouci2,
-                        stredisko=stredisko2, osobni_cislo=user2)
+                        stredisko=stredisko2, osobni_cislo=user2,
+                        mnozstvi_oopp=mnozstvi_vyd)
                     jmeno_soub_o = zamestnanec2.replace(" ", "_")
                     st.download_button(
                         label="📄 Stáhnout PDF protokol OOPP",
@@ -1866,6 +1875,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                         file_name=f"Protokol_OOPP_{jmeno_soub_o}.pdf",
                         mime="application/pdf",
                         use_container_width=True,
+                        on_click=lambda: st.session_state.update(oopp_reset=st.session_state.oopp_reset + 1),
                         key=f"dl_oopp_{st.session_state.oopp_reset}")
                 else:
                     st.info("Pro PDF protokol vyplň zaměstnance, email, středisko, osobní číslo i vedoucího.")
@@ -1909,11 +1919,15 @@ elif st.session_state.kategorie == "OOPP & MČDP":
         elif rezim == "Tisk protokolu OOPP":
             st.subheader("🖨️ Generátor předávacího protokolu — OOPP")
             st.markdown('<p style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Vyplň údaje — dostaneš PDF připravené k tisku a podpisu zaměstnance.</p>', unsafe_allow_html=True)
-            zam_oopp_tisk = st.text_input("Zaměstnanec", key="zam_oopp_tisk")
-            email_oopp_tisk = st.text_input("Email", key="email_oopp_tisk", placeholder="jan.novak@firma.cz")
-            stredisko_oopp_tisk = st.text_input("Středisko", key="stredisko_oopp_tisk")
-            user_oopp_tisk = st.text_input("Osobní číslo", key="user_oopp_tisk")
-            ved_oopp_tisk = st.text_input("Vedoucí", key="ved_oopp_tisk")
+            if "oopp_tisk_reset" not in st.session_state:
+                st.session_state.oopp_tisk_reset = 0
+            sklad_oopp_tisk = st.text_input("Sklad / oddělení pro protokol", value=sklad_oopp,
+                key=f"sklad_oopp_tisk_{st.session_state.oopp_tisk_reset}")
+            zam_oopp_tisk = st.text_input("Zaměstnanec", key=f"zam_oopp_tisk_{st.session_state.oopp_tisk_reset}")
+            email_oopp_tisk = st.text_input("Email", key=f"email_oopp_tisk_{st.session_state.oopp_tisk_reset}", placeholder="jan.novak@firma.cz")
+            stredisko_oopp_tisk = st.text_input("Středisko", key=f"stredisko_oopp_tisk_{st.session_state.oopp_tisk_reset}")
+            user_oopp_tisk = st.text_input("Osobní číslo", key=f"user_oopp_tisk_{st.session_state.oopp_tisk_reset}")
+            ved_oopp_tisk = st.text_input("Vedoucí", key=f"ved_oopp_tisk_{st.session_state.oopp_tisk_reset}")
             pomucky_tisk_def = [
                 ("Oděv pracovní (montérky)", "odev", None),
                 ("Rukavice bezpečnostní", "rukavice", None),
@@ -1931,12 +1945,16 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             c_o1, c_o2 = st.columns(2)
             vydane_tisk = {}
             velikosti_tisk = {}
+            mnozstvi_tisk = {}
             for i, (nazev, klic, _) in enumerate(pomucky_tisk_def):
                 col = c_o1 if i % 2 == 0 else c_o2
-                vydane_tisk[klic] = col.checkbox(nazev, key=f"tiskoopp_{klic}", value=True)
+                vydane_tisk[klic] = col.checkbox(nazev, key=f"tiskoopp_{klic}_{st.session_state.oopp_tisk_reset}", value=True)
                 if vydane_tisk[klic]:
                     velikosti_tisk[klic] = col.text_input(f"Velikost — {nazev}",
-                        key=f"tiskvel_{klic}", placeholder="např. L, 42, …")
+                        key=f"tiskvel_{klic}_{st.session_state.oopp_tisk_reset}", placeholder="např. L, 42, …")
+                    mnozstvi_tisk[klic] = col.number_input(f"Množství — {nazev}",
+                        min_value=1, step=1, value=1,
+                        key=f"tiskmnoz_{klic}_{st.session_state.oopp_tisk_reset}")
 
             def exp_datum_tisk(mesice):
                 if not mesice:
@@ -1953,10 +1971,11 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             }
             oopp_tisk_udaje_ok = all([zam_oopp_tisk, email_oopp_tisk, stredisko_oopp_tisk, user_oopp_tisk, ved_oopp_tisk])
             pdf_oopp_tisk = generovat_pdf_oopp(
-                zamestnanec=zam_oopp_tisk or "—", email=email_oopp_tisk, sklad=sklad_oopp,
+                zamestnanec=zam_oopp_tisk or "—", email=email_oopp_tisk, sklad=sklad_oopp_tisk or sklad_oopp,
                 vydane_pomucky=vydane_tisk, velikosti_oopp=velikosti_tisk,
                 expirace_oopp=expirace_tisk, vedouci=ved_oopp_tisk,
-                stredisko=stredisko_oopp_tisk, osobni_cislo=user_oopp_tisk) if oopp_tisk_udaje_ok else None
+                stredisko=stredisko_oopp_tisk, osobni_cislo=user_oopp_tisk,
+                mnozstvi_oopp=mnozstvi_tisk) if oopp_tisk_udaje_ok else None
             jmeno_soub_tisk = (zam_oopp_tisk or "protokol").replace(" ", "_")
             st.download_button(
                 label="📄 Stáhnout PDF protokol OOPP k tisku",
@@ -1965,6 +1984,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 mime="application/pdf",
                 use_container_width=False,
                 disabled=not oopp_tisk_udaje_ok,
-                key=f"dl_tisk_oopp_{zam_oopp_tisk or 'empty'}")
+                on_click=lambda: st.session_state.update(oopp_tisk_reset=st.session_state.oopp_tisk_reset + 1),
+                key=f"dl_tisk_oopp_{st.session_state.oopp_tisk_reset}_{zam_oopp_tisk or 'empty'}")
             if not oopp_tisk_udaje_ok:
                 st.info("Vyplň zaměstnance, email, středisko, osobní číslo i vedoucího pro aktivaci stažení.")
