@@ -941,9 +941,10 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
         vydano = vydane_pomucky.get(klic, False)
         vel = velikosti_oopp.get(klic, '') if vydano else ''
         exp = expirace_oopp.get(klic, '') if vydano else ''
+        expirace_cell = exp if exp else ('dle potřeby' if vydano else '—')
         polozky_data.append([Paragraph(nazev, td_s), mark(vydano),
                               vel if vel else ('__________' if vydano else '—'),
-                              exp if exp else '—', Paragraph(spec, td_s), ''])
+                              expirace_cell, Paragraph(spec, td_s), ''])
     col_w = [4.3*cm, 1.4*cm, 2.2*cm, 2.0*cm, 3.6*cm, 3.5*cm]
     pt = Table(polozky_data, colWidths=col_w, rowHeights=[0.75*cm] + [0.7*cm]*len(pomucky_def))
     pt.setStyle(TableStyle([
@@ -1828,7 +1829,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                         rows_data = []
                         for nazev, klic, exp_mes in pomucky_def:
                             if vydane.get(klic):
-                                exp = exp_datum(exp_mes)
+                                exp = exp_datum(exp_mes or (12 if velikosti_vyd.get(klic) else None))
                                 rows_data.append({
                                     "zamestnanec": zamestnanec2,
                                     "email": email_zam2,
@@ -1848,8 +1849,10 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                             st.error("Záznam se nepodařilo odeslat do Google Sheets.")
             with col_btn_o2:
                 if zamestnanec2:
-                    expirace_dict = {klic: exp_datum(exp_mes) or ""
-                                     for nazev, klic, exp_mes in pomucky_def if vydane.get(klic)}
+                    expirace_dict = {
+                        klic: exp_datum(exp_mes or (12 if velikosti_vyd.get(klic) else None)) or ""
+                        for nazev, klic, exp_mes in pomucky_def if vydane.get(klic)
+                    }
                     pdf_oopp_bytes = generovat_pdf_oopp(
                         zamestnanec=zamestnanec2, email=email_zam2, sklad=sklad_oopp,
                         vydane_pomucky=vydane, velikosti_oopp=velikosti_vyd,
@@ -1941,8 +1944,10 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 mes_exp = (mes - 1) % 12 + 1
                 return f"{mes_exp:02d}/{rok_exp}"
 
-            expirace_tisk = {klic: exp_datum_tisk(exp_mes)
-                             for nazev, klic, exp_mes in pomucky_tisk_def if vydane_tisk.get(klic)}
+            expirace_tisk = {
+                klic: exp_datum_tisk(exp_mes or (12 if velikosti_tisk.get(klic) else None))
+                for nazev, klic, exp_mes in pomucky_tisk_def if vydane_tisk.get(klic)
+            }
             pdf_oopp_tisk = generovat_pdf_oopp(
                 zamestnanec=zam_oopp_tisk or "—", email=email_oopp_tisk, sklad=sklad_oopp,
                 vydane_pomucky=vydane_tisk, velikosti_oopp=velikosti_tisk,
