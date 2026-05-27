@@ -843,15 +843,15 @@ def generovat_pdf_protokol(zamestnanec, sklad, kvartal, vydane_polozky, vedouci,
         ('Abrazivní pasta Solvina', 'solvina', False),
     ]
     header_row = [Paragraph('Položka', th_s), Paragraph('Vydáno', th_s),
-                  Paragraph('Velikost', th_s), Paragraph('Množství', th_s), Paragraph('Podpis', th_s)]
+                  Paragraph('Velikost', th_s), Paragraph('Množství', th_s)]
     polozky_data = [header_row]
     for nazev, klic, je_odev in polozky_def:
         vel_val = velikosti.get(klic, '') if je_odev else ''
         velikost_cell = vel_val if vel_val else ('__________' if je_odev else '—')
         mnozstvi_cell = str(mnozstvi.get(klic, '') or '1') if vydane_polozky.get(klic) else '—'
         polozky_data.append([Paragraph(nazev, td_s), mark(vydane_polozky.get(klic)),
-                              velikost_cell, mnozstvi_cell, ''])
-    col_w = [6.3*cm, 1.6*cm, 2.2*cm, 2.2*cm, 4.7*cm]
+                              velikost_cell, mnozstvi_cell])
+    col_w = [8.0*cm, 2.0*cm, 3.5*cm, 3.5*cm]
     pt = Table(polozky_data, colWidths=col_w, rowHeights=[0.8*cm] + [0.85*cm]*len(polozky_def))
     pt.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), ALZA_BLUE),
@@ -864,7 +864,6 @@ def generovat_pdf_protokol(zamestnanec, sklad, kvartal, vydane_polozky, vedouci,
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 0), (-1, -1), 6), ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('LEFTPADDING', (0, 0), (-1, -1), 8), ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('LINEBELOW', (4, 1), (4, -1), 0.6, TEXT_MUTED),
     ]))
     el.append(pt)
     el.append(Spacer(1, 0.5*cm))
@@ -940,7 +939,7 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
         return '✓' if val else '—'
     header_row = [Paragraph('Pomůcka', th_s), Paragraph('Vydáno', th_s),
                   Paragraph('Velikost', th_s), Paragraph('Expirace', th_s),
-                  Paragraph('Množství', th_s), Paragraph('Podpis', th_s)]
+                  Paragraph('Množství', th_s)]
     polozky_data = [header_row]
     for nazev, klic in pomucky_def:
         vydano = vydane_pomucky.get(klic, False)
@@ -950,8 +949,8 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
         expirace_cell = exp if exp else ('dle potřeby' if vydano else '—')
         polozky_data.append([Paragraph(nazev, td_s), mark(vydano),
                               vel if vel else ('__________' if vydano else '—'),
-                              Paragraph(expirace_cell, td_s), mnozstvi, ''])
-    col_w = [4.5*cm, 1.3*cm, 2.25*cm, 2.45*cm, 2.0*cm, 4.5*cm]
+                              Paragraph(expirace_cell, td_s), mnozstvi])
+    col_w = [5.4*cm, 1.8*cm, 3.1*cm, 3.3*cm, 3.4*cm]
     pt = Table(polozky_data, colWidths=col_w, rowHeights=[0.75*cm] + [0.7*cm]*len(pomucky_def))
     pt.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), ALZA_BLUE),
@@ -963,7 +962,6 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
         ('ALIGN', (1, 0), (3, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 0), (-1, -1), 5), ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
         ('LEFTPADDING', (0, 0), (-1, -1), 6), ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-        ('LINEBELOW', (5, 1), (5, -1), 0.6, TEXT_MUTED),
     ]))
     el.append(pt)
     el.append(Spacer(1, 0.5*cm))
