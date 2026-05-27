@@ -851,7 +851,7 @@ def generovat_pdf_protokol(zamestnanec, sklad, kvartal, vydane_polozky, vedouci,
         mnozstvi_cell = str(mnozstvi.get(klic, '') or '1') if vydane_polozky.get(klic) else '—'
         polozky_data.append([Paragraph(nazev, td_s), mark(vydane_polozky.get(klic)),
                               velikost_cell, mnozstvi_cell])
-    col_w = [8.0*cm, 2.0*cm, 3.5*cm, 3.5*cm]
+    col_w = [7.4*cm, 2.7*cm, 3.4*cm, 3.5*cm]
     pt = Table(polozky_data, colWidths=col_w, rowHeights=[0.8*cm] + [0.85*cm]*len(polozky_def))
     pt.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), ALZA_BLUE),
@@ -950,7 +950,7 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
         polozky_data.append([Paragraph(nazev, td_s), mark(vydano),
                               vel if vel else ('__________' if vydano else '—'),
                               Paragraph(expirace_cell, td_s), mnozstvi])
-    col_w = [5.4*cm, 1.8*cm, 3.1*cm, 3.3*cm, 3.4*cm]
+    col_w = [4.9*cm, 2.6*cm, 2.9*cm, 3.2*cm, 3.4*cm]
     pt = Table(polozky_data, colWidths=col_w, rowHeights=[0.75*cm] + [0.7*cm]*len(pomucky_def))
     pt.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), ALZA_BLUE),
