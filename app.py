@@ -791,9 +791,11 @@ def _podpisy_alza(W):
     return t
  
  
-def generovat_pdf_protokol(zamestnanec, sklad, kvartal, vydane_polozky, vedouci, velikosti=None):
+def generovat_pdf_protokol(zamestnanec, sklad, kvartal, vydane_polozky, vedouci, velikosti=None, mnozstvi=None):
     if velikosti is None:
         velikosti = {}
+    if mnozstvi is None:
+        mnozstvi = {}
     body_s  = ParagraphStyle('b', fontSize=10, fontName=PDF_FONT, textColor=TEXT_DARK, leading=14)
     body_b  = ParagraphStyle('bb', fontSize=10, fontName=PDF_FONT_BOLD, textColor=TEXT_DARK, leading=14)
     section_s = ParagraphStyle('sec', fontSize=11, fontName=PDF_FONT_BOLD, textColor=ALZA_BLUE, leading=14, spaceAfter=4)
@@ -814,11 +816,11 @@ def generovat_pdf_protokol(zamestnanec, sklad, kvartal, vydane_polozky, vedouci,
     el.append(Spacer(1, 0.3*cm))
     udaje_data = [
         [Paragraph('<b>Jméno a příjmení:</b>', body_b), Paragraph(zamestnanec or '…………………………………………', body_s)],
-        [Paragraph('<b>Sklad:</b>', body_b), Paragraph(sklad, body_s)],
+        [Paragraph('<b>Sklad:</b>', body_b), Paragraph(sklad or '—', body_s)],
         [Paragraph('<b>Kvartál / rok:</b>', body_b), Paragraph(kvartal, body_s)],
         [Paragraph('<b>Datum výdeje:</b>', body_b), Paragraph(datetime.now().strftime('%d.%m.%Y'), body_s)],
         [Paragraph('<b>Vedoucí / zadal:</b>', body_b), Paragraph(vedouci or '—', body_s)],
-        [Paragraph('<b>Číslo protokolu:</b>', body_b), Paragraph(f"MCDP-{sklad}-{datetime.now().strftime('%Y%m%d%H%M')}", body_s)],
+        [Paragraph('<b>Číslo protokolu:</b>', body_b), Paragraph(f"MCDP-{sklad or 'BEZ-SKLADU'}-{datetime.now().strftime('%Y%m%d%H%M')}", body_s)],
     ]
     ut = Table(udaje_data, colWidths=[4.0*cm, W - 4.0*cm])
     ut.setStyle(TableStyle([
@@ -834,21 +836,22 @@ def generovat_pdf_protokol(zamestnanec, sklad, kvartal, vydane_polozky, vedouci,
     def mark(val):
         return '✓' if val else '—'
     polozky_def = [
-        ('1× Ručník Siguro 50×100 cm', 'rucnik',  '50×100 cm, froté', False),
-        ('1× Tekuté mýdlo', 'mydlo', '500 ml', False),
-        ('1× Ariel tablety', 'ariel', '60 ks / balení', False),
-        ('1× Krém Indulona', 'krem', 'originál nebo měsíčkový', False),
-        ('1× Abrazivní pasta Solvina', 'solvina', '450 g', False),
+        ('Ručník Siguro 50×100 cm', 'rucnik', False),
+        ('Tekuté mýdlo', 'mydlo', False),
+        ('Ariel tablety', 'ariel', False),
+        ('Krém Indulona', 'krem', False),
+        ('Abrazivní pasta Solvina', 'solvina', False),
     ]
     header_row = [Paragraph('Položka', th_s), Paragraph('Vydáno', th_s),
-                  Paragraph('Velikost', th_s), Paragraph('Specifikace', th_s), Paragraph('Podpis', th_s)]
+                  Paragraph('Velikost', th_s), Paragraph('Množství', th_s), Paragraph('Podpis', th_s)]
     polozky_data = [header_row]
-    for nazev, klic, spec, je_odev in polozky_def:
+    for nazev, klic, je_odev in polozky_def:
         vel_val = velikosti.get(klic, '') if je_odev else ''
         velikost_cell = vel_val if vel_val else ('__________' if je_odev else '—')
+        mnozstvi_cell = str(mnozstvi.get(klic, '') or '1') if vydane_polozky.get(klic) else '—'
         polozky_data.append([Paragraph(nazev, td_s), mark(vydane_polozky.get(klic)),
-                              velikost_cell, Paragraph(spec, td_s), ''])
-    col_w = [5.8*cm, 1.6*cm, 2.2*cm, 4.0*cm, 3.4*cm]
+                              velikost_cell, mnozstvi_cell, ''])
+    col_w = [6.3*cm, 1.6*cm, 2.2*cm, 2.2*cm, 4.7*cm]
     pt = Table(polozky_data, colWidths=col_w, rowHeights=[0.8*cm] + [0.85*cm]*len(polozky_def))
     pt.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), ALZA_BLUE),
@@ -1673,6 +1676,13 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             ariel   = c1.checkbox("1x Ariel tablety 60 ks", value=True)
             krem    = c2.checkbox("1x Krém Indulona", value=True)
             solvina = c1.checkbox("1x Abrazivní pasta Solvina", value=True)
+            mnozstvi_mcdp = {
+                "rucnik": c1.number_input("Množství — Ručník Siguro", min_value=1, step=1, value=1, key=f"mcdp_mnoz_rucnik_{st.session_state.mcdp_reset}") if rucnik else 0,
+                "mydlo": c2.number_input("Množství — Tekuté mýdlo", min_value=1, step=1, value=1, key=f"mcdp_mnoz_mydlo_{st.session_state.mcdp_reset}") if mydlo else 0,
+                "ariel": c1.number_input("Množství — Ariel tablety", min_value=1, step=1, value=1, key=f"mcdp_mnoz_ariel_{st.session_state.mcdp_reset}") if ariel else 0,
+                "krem": c2.number_input("Množství — Krém Indulona", min_value=1, step=1, value=1, key=f"mcdp_mnoz_krem_{st.session_state.mcdp_reset}") if krem else 0,
+                "solvina": c1.number_input("Množství — Solvina", min_value=1, step=1, value=1, key=f"mcdp_mnoz_solvina_{st.session_state.mcdp_reset}") if solvina else 0,
+            }
             velikost_rucnik = st.text_input("Velikost ručníku (volitelně, pro tisk)",
                 placeholder="např. 50x100 cm", key=f"velrucnik_{st.session_state.mcdp_reset}")
             vedouci = st.text_input("Zadal / vedoucí")
@@ -1730,7 +1740,8 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                         vydane_polozky={"rucnik": rucnik, "mydlo": mydlo, "ariel": ariel,
                                         "krem": krem, "solvina": solvina},
                         vedouci=vedouci,
-                        velikosti={"rucnik": velikost_rucnik} if velikost_rucnik else None)
+                        velikosti={"rucnik": velikost_rucnik} if velikost_rucnik else None,
+                        mnozstvi=mnozstvi_mcdp)
                     jmeno_souboru = zamestnanec.replace(" ", "_")
                     st.download_button(
                         label="📄 Stáhnout PDF protokol",
@@ -1738,6 +1749,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                         file_name=f"Protokol_MCDP_{jmeno_souboru}_{kvartal_sel[:2]}.pdf",
                         mime="application/pdf",
                         use_container_width=True,
+                        on_click=lambda: st.session_state.update(mcdp_reset=st.session_state.mcdp_reset + 1),
                         key=f"dl_mcdp_{st.session_state.mcdp_reset}")
 
         elif rezim == "Evidence OOPP":
@@ -1883,27 +1895,39 @@ elif st.session_state.kategorie == "OOPP & MČDP":
         elif rezim == "Tisk protokolu MČDP":
             st.subheader("🖨️ Generátor předávacího protokolu — MČDP")
             st.markdown('<p style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Vyplň údaje — dostaneš PDF připravené k tisku a podpisu zaměstnance.</p>', unsafe_allow_html=True)
-            zam_tisk = st.text_input("Zaměstnanec")
+            if "mcdp_tisk_reset" not in st.session_state:
+                st.session_state.mcdp_tisk_reset = 0
+            sklad_mcdp_tisk = st.text_input("Sklad / oddělení pro protokol (volitelné)",
+                key=f"sklad_mcdp_tisk_{st.session_state.mcdp_tisk_reset}")
+            zam_tisk = st.text_input("Zaměstnanec", key=f"zam_tisk_{st.session_state.mcdp_tisk_reset}")
             rok_akt2 = datetime.now().year
             kv_tisk = st.selectbox("Kvartál", [
                 f"Q1 / {rok_akt2}", f"Q2 / {rok_akt2}", f"Q3 / {rok_akt2}", f"Q4 / {rok_akt2}",
                 f"Q1 / {rok_akt2+1}", f"Q2 / {rok_akt2+1}", f"Q3 / {rok_akt2+1}", f"Q4 / {rok_akt2+1}"],
-                key="kv_tisk")
-            ved_tisk = st.text_input("Vedoucí", key="ved_tisk")
+                key=f"kv_tisk_{st.session_state.mcdp_tisk_reset}")
+            ved_tisk = st.text_input("Vedoucí", key=f"ved_tisk_{st.session_state.mcdp_tisk_reset}")
             st.write("**Položky pro protokol:**")
             t1, t2 = st.columns(2)
-            cb1 = t1.checkbox("Ručník Siguro", value=True, key="p1")
-            cb2 = t2.checkbox("Tekuté mýdlo", value=True, key="p2")
-            cb3 = t1.checkbox("Ariel 60 ks", value=True, key="p3")
-            cb4 = t2.checkbox("Krém Indulona", value=True, key="p4")
-            cb5 = t1.checkbox("Solvina", value=True, key="p5")
+            cb1 = t1.checkbox("Ručník Siguro", value=True, key=f"p1_{st.session_state.mcdp_tisk_reset}")
+            cb2 = t2.checkbox("Tekuté mýdlo", value=True, key=f"p2_{st.session_state.mcdp_tisk_reset}")
+            cb3 = t1.checkbox("Ariel 60 ks", value=True, key=f"p3_{st.session_state.mcdp_tisk_reset}")
+            cb4 = t2.checkbox("Krém Indulona", value=True, key=f"p4_{st.session_state.mcdp_tisk_reset}")
+            cb5 = t1.checkbox("Solvina", value=True, key=f"p5_{st.session_state.mcdp_tisk_reset}")
+            mnozstvi_mcdp_tisk = {
+                "rucnik": t1.number_input("Množství — Ručník Siguro", min_value=1, step=1, value=1, key=f"tisk_mcdp_mnoz_rucnik_{st.session_state.mcdp_tisk_reset}") if cb1 else 0,
+                "mydlo": t2.number_input("Množství — Tekuté mýdlo", min_value=1, step=1, value=1, key=f"tisk_mcdp_mnoz_mydlo_{st.session_state.mcdp_tisk_reset}") if cb2 else 0,
+                "ariel": t1.number_input("Množství — Ariel tablety", min_value=1, step=1, value=1, key=f"tisk_mcdp_mnoz_ariel_{st.session_state.mcdp_tisk_reset}") if cb3 else 0,
+                "krem": t2.number_input("Množství — Krém Indulona", min_value=1, step=1, value=1, key=f"tisk_mcdp_mnoz_krem_{st.session_state.mcdp_tisk_reset}") if cb4 else 0,
+                "solvina": t1.number_input("Množství — Solvina", min_value=1, step=1, value=1, key=f"tisk_mcdp_mnoz_solvina_{st.session_state.mcdp_tisk_reset}") if cb5 else 0,
+            }
             vel_rucnik_tisk = st.text_input("Velikost ručníku (volitelně)",
-                placeholder="např. 50×100 cm", key="vel_rucnik_tisk")
+                placeholder="např. 50×100 cm", key=f"vel_rucnik_tisk_{st.session_state.mcdp_tisk_reset}")
             pdf_tisk = generovat_pdf_protokol(
-                zamestnanec=zam_tisk or "—", sklad=sklad_oopp, kvartal=kv_tisk,
+                zamestnanec=zam_tisk or "—", sklad=sklad_mcdp_tisk, kvartal=kv_tisk,
                 vydane_polozky={"rucnik": cb1, "mydlo": cb2, "ariel": cb3, "krem": cb4, "solvina": cb5},
                 vedouci=ved_tisk,
-                velikosti={"rucnik": vel_rucnik_tisk} if vel_rucnik_tisk else None)
+                velikosti={"rucnik": vel_rucnik_tisk} if vel_rucnik_tisk else None,
+                mnozstvi=mnozstvi_mcdp_tisk)
             jmeno_souboru = (zam_tisk or "protokol").replace(" ", "_")
             st.download_button(
                 label="📄 Stáhnout PDF protokol k tisku",
@@ -1912,7 +1936,8 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 mime="application/pdf",
                 use_container_width=False,
                 disabled=not zam_tisk,
-                key=f"dl_tisk_{zam_tisk or 'empty'}")
+                on_click=lambda: st.session_state.update(mcdp_tisk_reset=st.session_state.mcdp_tisk_reset + 1),
+                key=f"dl_tisk_{st.session_state.mcdp_tisk_reset}_{zam_tisk or 'empty'}")
             if not zam_tisk:
                 st.info("Zadej jméno zaměstnance pro aktivaci tlačítka stažení.")
 
@@ -1921,7 +1946,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             st.markdown('<p style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Vyplň údaje — dostaneš PDF připravené k tisku a podpisu zaměstnance.</p>', unsafe_allow_html=True)
             if "oopp_tisk_reset" not in st.session_state:
                 st.session_state.oopp_tisk_reset = 0
-            sklad_oopp_tisk = st.text_input("Sklad / oddělení pro protokol", value=sklad_oopp,
+            sklad_oopp_tisk = st.text_input("Sklad / oddělení pro protokol (volitelné)",
                 key=f"sklad_oopp_tisk_{st.session_state.oopp_tisk_reset}")
             zam_oopp_tisk = st.text_input("Zaměstnanec", key=f"zam_oopp_tisk_{st.session_state.oopp_tisk_reset}")
             email_oopp_tisk = st.text_input("Email", key=f"email_oopp_tisk_{st.session_state.oopp_tisk_reset}", placeholder="jan.novak@firma.cz")
@@ -1971,7 +1996,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             }
             oopp_tisk_udaje_ok = all([zam_oopp_tisk, email_oopp_tisk, stredisko_oopp_tisk, user_oopp_tisk, ved_oopp_tisk])
             pdf_oopp_tisk = generovat_pdf_oopp(
-                zamestnanec=zam_oopp_tisk or "—", email=email_oopp_tisk, sklad=sklad_oopp_tisk or sklad_oopp,
+                zamestnanec=zam_oopp_tisk or "—", email=email_oopp_tisk, sklad=sklad_oopp_tisk,
                 vydane_pomucky=vydane_tisk, velikosti_oopp=velikosti_tisk,
                 expirace_oopp=expirace_tisk, vedouci=ved_oopp_tisk,
                 stredisko=stredisko_oopp_tisk, osobni_cislo=user_oopp_tisk,
