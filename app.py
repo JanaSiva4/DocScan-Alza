@@ -1671,11 +1671,11 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 f"Q1 / {rok_akt+1}", f"Q2 / {rok_akt+1}", f"Q3 / {rok_akt+1}", f"Q4 / {rok_akt+1}"])
             st.write("**Vydávané položky:**")
             c1, c2 = st.columns(2)
-            rucnik  = c1.checkbox("1x Ručník Siguro 50x100cm", value=True)
-            mydlo   = c2.checkbox("1x Tekuté mýdlo", value=True)
-            ariel   = c1.checkbox("1x Ariel tablety 60 ks", value=True)
-            krem    = c2.checkbox("1x Krém Indulona", value=True)
-            solvina = c1.checkbox("1x Abrazivní pasta Solvina", value=True)
+            rucnik  = c1.checkbox("1x Ručník Siguro 50x100cm", value=False)
+            mydlo   = c2.checkbox("1x Tekuté mýdlo", value=False)
+            ariel   = c1.checkbox("1x Ariel tablety 60 ks", value=False)
+            krem    = c2.checkbox("1x Krém Indulona", value=False)
+            solvina = c1.checkbox("1x Abrazivní pasta Solvina", value=False)
             mnozstvi_mcdp = {
                 "rucnik": c1.number_input("Množství — Ručník Siguro", min_value=1, step=1, value=1, key=f"mcdp_mnoz_rucnik_{st.session_state.mcdp_reset}") if rucnik else 0,
                 "mydlo": c2.number_input("Množství — Tekuté mýdlo", min_value=1, step=1, value=1, key=f"mcdp_mnoz_mydlo_{st.session_state.mcdp_reset}") if mydlo else 0,
@@ -1908,11 +1908,11 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             ved_tisk = st.text_input("Vedoucí", key=f"ved_tisk_{st.session_state.mcdp_tisk_reset}")
             st.write("**Položky pro protokol:**")
             t1, t2 = st.columns(2)
-            cb1 = t1.checkbox("Ručník Siguro", value=True, key=f"p1_{st.session_state.mcdp_tisk_reset}")
-            cb2 = t2.checkbox("Tekuté mýdlo", value=True, key=f"p2_{st.session_state.mcdp_tisk_reset}")
-            cb3 = t1.checkbox("Ariel 60 ks", value=True, key=f"p3_{st.session_state.mcdp_tisk_reset}")
-            cb4 = t2.checkbox("Krém Indulona", value=True, key=f"p4_{st.session_state.mcdp_tisk_reset}")
-            cb5 = t1.checkbox("Solvina", value=True, key=f"p5_{st.session_state.mcdp_tisk_reset}")
+            cb1 = t1.checkbox("Ručník Siguro", value=False, key=f"p1_{st.session_state.mcdp_tisk_reset}")
+            cb2 = t2.checkbox("Tekuté mýdlo", value=False, key=f"p2_{st.session_state.mcdp_tisk_reset}")
+            cb3 = t1.checkbox("Ariel 60 ks", value=False, key=f"p3_{st.session_state.mcdp_tisk_reset}")
+            cb4 = t2.checkbox("Krém Indulona", value=False, key=f"p4_{st.session_state.mcdp_tisk_reset}")
+            cb5 = t1.checkbox("Solvina", value=False, key=f"p5_{st.session_state.mcdp_tisk_reset}")
             mnozstvi_mcdp_tisk = {
                 "rucnik": t1.number_input("Množství — Ručník Siguro", min_value=1, step=1, value=1, key=f"tisk_mcdp_mnoz_rucnik_{st.session_state.mcdp_tisk_reset}") if cb1 else 0,
                 "mydlo": t2.number_input("Množství — Tekuté mýdlo", min_value=1, step=1, value=1, key=f"tisk_mcdp_mnoz_mydlo_{st.session_state.mcdp_tisk_reset}") if cb2 else 0,
@@ -1973,7 +1973,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             mnozstvi_tisk = {}
             for i, (nazev, klic, _) in enumerate(pomucky_tisk_def):
                 col = c_o1 if i % 2 == 0 else c_o2
-                vydane_tisk[klic] = col.checkbox(nazev, key=f"tiskoopp_{klic}_{st.session_state.oopp_tisk_reset}", value=True)
+                vydane_tisk[klic] = col.checkbox(nazev, key=f"tiskoopp_{klic}_{st.session_state.oopp_tisk_reset}", value=False)
                 if vydane_tisk[klic]:
                     velikosti_tisk[klic] = col.text_input(f"Velikost — {nazev}",
                         key=f"tiskvel_{klic}_{st.session_state.oopp_tisk_reset}", placeholder="např. L, 42, …")
