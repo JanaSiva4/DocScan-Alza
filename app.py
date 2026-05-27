@@ -944,8 +944,8 @@ def generovat_pdf_oopp(zamestnanec, email, sklad, vydane_pomucky, velikosti_oopp
         expirace_cell = exp if exp else ('dle potřeby' if vydano else '—')
         polozky_data.append([Paragraph(nazev, td_s), mark(vydano),
                               vel if vel else ('__________' if vydano else '—'),
-                              expirace_cell, Paragraph(spec, td_s), ''])
-    col_w = [4.3*cm, 1.4*cm, 2.2*cm, 2.0*cm, 3.6*cm, 3.5*cm]
+                              Paragraph(expirace_cell, td_s), Paragraph(spec, td_s), ''])
+    col_w = [4.1*cm, 1.3*cm, 2.1*cm, 2.45*cm, 3.55*cm, 3.5*cm]
     pt = Table(polozky_data, colWidths=col_w, rowHeights=[0.75*cm] + [0.7*cm]*len(pomucky_def))
     pt.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), ALZA_BLUE),
@@ -1848,7 +1848,8 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                         else:
                             st.error("Záznam se nepodařilo odeslat do Google Sheets.")
             with col_btn_o2:
-                if zamestnanec2:
+                oopp_udaje_ok = all([zamestnanec2, email_zam2, stredisko2, user2, vedouci2])
+                if oopp_udaje_ok:
                     expirace_dict = {
                         klic: exp_datum(exp_mes or (12 if velikosti_vyd.get(klic) else None)) or ""
                         for nazev, klic, exp_mes in pomucky_def if vydane.get(klic)
@@ -1866,6 +1867,8 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                         mime="application/pdf",
                         use_container_width=True,
                         key=f"dl_oopp_{st.session_state.oopp_reset}")
+                else:
+                    st.info("Pro PDF protokol vyplň zaměstnance, email, středisko, osobní číslo i vedoucího.")
 
         elif rezim == "Tisk protokolu MČDP":
             st.subheader("🖨️ Generátor předávacího protokolu — MČDP")
@@ -1948,11 +1951,12 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 klic: exp_datum_tisk(exp_mes or (12 if velikosti_tisk.get(klic) else None))
                 for nazev, klic, exp_mes in pomucky_tisk_def if vydane_tisk.get(klic)
             }
+            oopp_tisk_udaje_ok = all([zam_oopp_tisk, email_oopp_tisk, stredisko_oopp_tisk, user_oopp_tisk, ved_oopp_tisk])
             pdf_oopp_tisk = generovat_pdf_oopp(
                 zamestnanec=zam_oopp_tisk or "—", email=email_oopp_tisk, sklad=sklad_oopp,
                 vydane_pomucky=vydane_tisk, velikosti_oopp=velikosti_tisk,
                 expirace_oopp=expirace_tisk, vedouci=ved_oopp_tisk,
-                stredisko=stredisko_oopp_tisk, osobni_cislo=user_oopp_tisk)
+                stredisko=stredisko_oopp_tisk, osobni_cislo=user_oopp_tisk) if oopp_tisk_udaje_ok else None
             jmeno_soub_tisk = (zam_oopp_tisk or "protokol").replace(" ", "_")
             st.download_button(
                 label="📄 Stáhnout PDF protokol OOPP k tisku",
@@ -1960,7 +1964,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
                 file_name=f"Protokol_OOPP_{jmeno_soub_tisk}.pdf",
                 mime="application/pdf",
                 use_container_width=False,
-                disabled=not zam_oopp_tisk,
+                disabled=not oopp_tisk_udaje_ok,
                 key=f"dl_tisk_oopp_{zam_oopp_tisk or 'empty'}")
-            if not zam_oopp_tisk:
-                st.info("Zadej jméno zaměstnance pro aktivaci tlačítka stažení.")
+            if not oopp_tisk_udaje_ok:
+                st.info("Vyplň zaměstnance, email, středisko, osobní číslo i vedoucího pro aktivaci stažení.")
