@@ -6,6 +6,7 @@ import re
 import base64
 import json
 import qrcode
+import csv
 from datetime import datetime, date
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
@@ -44,6 +45,39 @@ def _registruj_font():
     return 'Helvetica', 'Helvetica-Bold'
 
 PDF_FONT, PDF_FONT_BOLD = _registruj_font()
+
+
+@st.cache_data(show_spinner=False)
+def nacist_adresar_zamestnancu():
+    cesta = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "zamestnanci.csv")
+    if not _os.path.exists(cesta):
+        return []
+    for encoding in ("utf-8-sig", "utf-8", "cp1250"):
+        try:
+            with open(cesta, newline="", encoding=encoding) as f:
+                return [dict(row) for row in csv.DictReader(f) if row.get("jmeno")]
+        except UnicodeDecodeError:
+            continue
+    return []
+
+
+def vyber_zamestnance_z_adresare(prefix):
+    adresar = nacist_adresar_zamestnancu()
+    if not adresar:
+        st.info("Adresář zaměstnanců je prázdný. Doplň soubor zamestnanci.csv nebo vyplň údaje ručně.")
+        return {}
+
+    oddeleni = sorted({r.get("oddeleni", "").strip() for r in adresar if r.get("oddeleni", "").strip()})
+    oddeleni_volba = st.selectbox("Oddělení ze seznamu zaměstnanců", ["Ruční vyplnění"] + oddeleni, key=f"{prefix}_oddeleni")
+    if oddeleni_volba == "Ruční vyplnění":
+        return {}
+
+    lide = [r for r in adresar if r.get("oddeleni", "").strip() == oddeleni_volba]
+    jmena = [r.get("jmeno", "").strip() for r in lide]
+    jmeno_volba = st.selectbox("Zaměstnanec ze seznamu", ["Ruční vyplnění"] + jmena, key=f"{prefix}_zamestnanec")
+    if jmeno_volba == "Ruční vyplnění":
+        return {}
+    return next((r for r in lide if r.get("jmeno", "").strip() == jmeno_volba), {})
 
 
 def odeslat_do_google_sheets(res, sklad="CZLC4"):
@@ -1659,10 +1693,11 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             st.subheader("🧴 Výdej MČDP — kvartální")
             if 'mcdp_reset' not in st.session_state:
                 st.session_state.mcdp_reset = 0
-            zamestnanec = st.text_input("Zaměstnanec (jméno a příjmení)", key=f"zam_{st.session_state.mcdp_reset}", autocomplete="off")
-            email_zam   = st.text_input("Email zaměstnance", placeholder="jan.novak@firma.cz", key=f"email_{st.session_state.mcdp_reset}", autocomplete="off")
-            stredisko   = st.text_input("Středisko", placeholder="např. Sklad A — příjem", key=f"stredisko_{st.session_state.mcdp_reset}", autocomplete="off")
-            user        = st.text_input("Uživatel / osobní číslo", placeholder="např. 12345", key=f"user_{st.session_state.mcdp_reset}", autocomplete="off")
+            predvypln_mcdp = vyber_zamestnance_z_adresare(f"mcdp_{st.session_state.mcdp_reset}")
+            zamestnanec = st.text_input("Zaměstnanec (jméno a příjmení)", value=predvypln_mcdp.get("jmeno", ""), key=f"zam_{st.session_state.mcdp_reset}", autocomplete="off")
+            email_zam   = st.text_input("Email zaměstnance", value=predvypln_mcdp.get("email", ""), placeholder="jan.novak@firma.cz", key=f"email_{st.session_state.mcdp_reset}", autocomplete="off")
+            stredisko   = st.text_input("Středisko", value=predvypln_mcdp.get("stredisko", ""), placeholder="např. Sklad A — příjem", key=f"stredisko_{st.session_state.mcdp_reset}", autocomplete="off")
+            user        = st.text_input("Uživatel / osobní číslo", value=predvypln_mcdp.get("osobni_cislo", ""), placeholder="např. 12345", key=f"user_{st.session_state.mcdp_reset}", autocomplete="off")
             rok_akt = datetime.now().year
             kvartal_sel = st.selectbox("Kvartál", [
                 f"Q1 / {rok_akt}", f"Q2 / {rok_akt}", f"Q3 / {rok_akt}", f"Q4 / {rok_akt}",
@@ -1683,7 +1718,7 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             }
             velikost_rucnik = st.text_input("Velikost ručníku (volitelně, pro tisk)",
                 placeholder="např. 50x100 cm", key=f"velrucnik_{st.session_state.mcdp_reset}")
-            vedouci = st.text_input("Zadal / vedoucí")
+            vedouci = st.text_input("Zadal / vedoucí", value=predvypln_mcdp.get("vedouci", ""), key=f"vedouci_mcdp_{st.session_state.mcdp_reset}")
             if zamestnanec and email_zam:
                 polozky_list = []
                 if rucnik:  polozky_list.append("Ručník Siguro")
@@ -1754,11 +1789,12 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             st.subheader("🦺 Evidence OOPP — výdej pomůcek")
             if 'oopp_reset' not in st.session_state:
                 st.session_state.oopp_reset = 0
-            zamestnanec2 = st.text_input("Zaměstnanec (jméno a příjmení)", key=f"zam2_{st.session_state.oopp_reset}", autocomplete="off")
-            email_zam2   = st.text_input("Email zaměstnance", placeholder="jan.novak@firma.cz", key=f"email2_{st.session_state.oopp_reset}", autocomplete="off")
-            stredisko2   = st.text_input("Středisko", placeholder="např. Sklad A — příjem", key=f"stredisko2_{st.session_state.oopp_reset}", autocomplete="off")
-            user2        = st.text_input("Uživatel / osobní číslo", placeholder="např. 12345", key=f"user2_{st.session_state.oopp_reset}", autocomplete="off")
-            vedouci2     = st.text_input("Zadal / vedoucí", key=f"vedouci2_{st.session_state.oopp_reset}", autocomplete="off")
+            predvypln_oopp = vyber_zamestnance_z_adresare(f"oopp_{st.session_state.oopp_reset}")
+            zamestnanec2 = st.text_input("Zaměstnanec (jméno a příjmení)", value=predvypln_oopp.get("jmeno", ""), key=f"zam2_{st.session_state.oopp_reset}", autocomplete="off")
+            email_zam2   = st.text_input("Email zaměstnance", value=predvypln_oopp.get("email", ""), placeholder="jan.novak@firma.cz", key=f"email2_{st.session_state.oopp_reset}", autocomplete="off")
+            stredisko2   = st.text_input("Středisko", value=predvypln_oopp.get("stredisko", ""), placeholder="např. Sklad A — příjem", key=f"stredisko2_{st.session_state.oopp_reset}", autocomplete="off")
+            user2        = st.text_input("Uživatel / osobní číslo", value=predvypln_oopp.get("osobni_cislo", ""), placeholder="např. 12345", key=f"user2_{st.session_state.oopp_reset}", autocomplete="off")
+            vedouci2     = st.text_input("Zadal / vedoucí", value=predvypln_oopp.get("vedouci", ""), key=f"vedouci2_{st.session_state.oopp_reset}", autocomplete="off")
             st.write("**Vydávané pomůcky:**")
             pomucky_def = [
                 ("Oděv pracovní (montérky)", "odev", None),
@@ -1895,15 +1931,16 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             st.markdown('<p style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Vyplň údaje — dostaneš PDF připravené k tisku a podpisu zaměstnance.</p>', unsafe_allow_html=True)
             if "mcdp_tisk_reset" not in st.session_state:
                 st.session_state.mcdp_tisk_reset = 0
+            predvypln_mcdp_tisk = vyber_zamestnance_z_adresare(f"mcdp_tisk_{st.session_state.mcdp_tisk_reset}")
             sklad_mcdp_tisk = st.text_input("Sklad / oddělení pro protokol (volitelné)",
                 key=f"sklad_mcdp_tisk_{st.session_state.mcdp_tisk_reset}")
-            zam_tisk = st.text_input("Zaměstnanec", key=f"zam_tisk_{st.session_state.mcdp_tisk_reset}")
+            zam_tisk = st.text_input("Zaměstnanec", value=predvypln_mcdp_tisk.get("jmeno", ""), key=f"zam_tisk_{st.session_state.mcdp_tisk_reset}")
             rok_akt2 = datetime.now().year
             kv_tisk = st.selectbox("Kvartál", [
                 f"Q1 / {rok_akt2}", f"Q2 / {rok_akt2}", f"Q3 / {rok_akt2}", f"Q4 / {rok_akt2}",
                 f"Q1 / {rok_akt2+1}", f"Q2 / {rok_akt2+1}", f"Q3 / {rok_akt2+1}", f"Q4 / {rok_akt2+1}"],
                 key=f"kv_tisk_{st.session_state.mcdp_tisk_reset}")
-            ved_tisk = st.text_input("Vedoucí", key=f"ved_tisk_{st.session_state.mcdp_tisk_reset}")
+            ved_tisk = st.text_input("Vedoucí", value=predvypln_mcdp_tisk.get("vedouci", ""), key=f"ved_tisk_{st.session_state.mcdp_tisk_reset}")
             st.write("**Položky pro protokol:**")
             t1, t2 = st.columns(2)
             cb1 = t1.checkbox("Ručník Siguro", value=False, key=f"p1_{st.session_state.mcdp_tisk_reset}")
@@ -1944,13 +1981,14 @@ elif st.session_state.kategorie == "OOPP & MČDP":
             st.markdown('<p style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Vyplň údaje — dostaneš PDF připravené k tisku a podpisu zaměstnance.</p>', unsafe_allow_html=True)
             if "oopp_tisk_reset" not in st.session_state:
                 st.session_state.oopp_tisk_reset = 0
+            predvypln_oopp_tisk = vyber_zamestnance_z_adresare(f"oopp_tisk_{st.session_state.oopp_tisk_reset}")
             sklad_oopp_tisk = st.text_input("Sklad / oddělení pro protokol (volitelné)",
                 key=f"sklad_oopp_tisk_{st.session_state.oopp_tisk_reset}")
-            zam_oopp_tisk = st.text_input("Zaměstnanec", key=f"zam_oopp_tisk_{st.session_state.oopp_tisk_reset}")
-            email_oopp_tisk = st.text_input("Email", key=f"email_oopp_tisk_{st.session_state.oopp_tisk_reset}", placeholder="jan.novak@firma.cz")
-            stredisko_oopp_tisk = st.text_input("Středisko", key=f"stredisko_oopp_tisk_{st.session_state.oopp_tisk_reset}")
-            user_oopp_tisk = st.text_input("Osobní číslo", key=f"user_oopp_tisk_{st.session_state.oopp_tisk_reset}")
-            ved_oopp_tisk = st.text_input("Vedoucí", key=f"ved_oopp_tisk_{st.session_state.oopp_tisk_reset}")
+            zam_oopp_tisk = st.text_input("Zaměstnanec", value=predvypln_oopp_tisk.get("jmeno", ""), key=f"zam_oopp_tisk_{st.session_state.oopp_tisk_reset}")
+            email_oopp_tisk = st.text_input("Email", value=predvypln_oopp_tisk.get("email", ""), key=f"email_oopp_tisk_{st.session_state.oopp_tisk_reset}", placeholder="jan.novak@firma.cz")
+            stredisko_oopp_tisk = st.text_input("Středisko", value=predvypln_oopp_tisk.get("stredisko", ""), key=f"stredisko_oopp_tisk_{st.session_state.oopp_tisk_reset}")
+            user_oopp_tisk = st.text_input("Osobní číslo", value=predvypln_oopp_tisk.get("osobni_cislo", ""), key=f"user_oopp_tisk_{st.session_state.oopp_tisk_reset}")
+            ved_oopp_tisk = st.text_input("Vedoucí", value=predvypln_oopp_tisk.get("vedouci", ""), key=f"ved_oopp_tisk_{st.session_state.oopp_tisk_reset}")
             pomucky_tisk_def = [
                 ("Oděv pracovní (montérky)", "odev", None),
                 ("Rukavice bezpečnostní", "rukavice", None),
